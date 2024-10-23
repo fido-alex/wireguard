@@ -7,7 +7,7 @@ function basic_image {
   sudo debootstrap bookworm bookworm > /dev/null
   sudo tar -C $codename -c . | docker import - $codename
   docker images
-  sleep 3
+  #sleep 3
 }
 
 function delete_image {
@@ -15,7 +15,7 @@ function delete_image {
   docker rmi "$remove_image_path"
   docker images
   sudo rm -rf ~/docker/"$1"/
-  sleep 7
+  #sleep 7
 }
 
 function image_creation {
@@ -27,26 +27,39 @@ function image_creation {
   echo "WORKDIR /app" >> Dockerfile
   echo "COPY ./src ./" >> Dockerfile
   echo "RUN mv sources.list /etc/apt/sources.list" >> Dockerfile
+  echo "RUN apt update -y" >> Dockerfile
+  echo "RUN apt upgrade -y" >> Dockerfile
+  echo "RUN apt install -y wireguard" >> Dockerfile
+  echo "RUN cd /etc/wireguard/" >> Dockerfile
+  echo "RUN wg genkey | tee /etc/wireguard/privatekey | wg pubkey | tee /etc/wireguard/publickey" >> Dockerfile
+  echo 'RUN privatekey=`cat /etc/wireguard/privatekey`' >> Dockerfile
+  echo 'RUN echo '[Interface]' > wg0.conf' >> Dockerfile
+  echo 'RUN echo "PrivateKey = $privatekey" >> wg0.conf' >> Dockerfile
+  echo 'RUN echo "Address = 10.0.10.1/24" >> wg0.conf' >> Dockerfile
+  echo 'RUN echo "ListenPort = 51831" >> wg0.conf' >> Dockerfile
+  echo 'RUN echo "PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eno1 -j MASQUERADE" >> wg0.conf' >> Dockerfile
+  echo 'RUN echo "PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eno1 -j MASQUERADE" >> wg0.conf' >> Dockerfile
+  echo 'RUN echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf' >> Dockerfile
+  echo 'RUN systemctl enable wg-quick@wg0.service' >> Dockerfile
   echo 'CMD ["bash"]' >> Dockerfile
   docker build -t $1 .
-  docker images
-  docker run -it --rm --network=host --name="$1" "$1"
-  sleep 7
+  #docker images
+  #docker run -it --rm --network=host --name="$1" "$1"
+  #sleep 7
 }
 
-while [ "$wireguard" != "q" ] | [ "$wireguard" != "Q" ]
-#clear
+while [ "$main" != "q" ] | [ "$main" != "Q" ]
 do
+  clear
   echo "[q] quit"
   echo "[b] base install"
   echo "[br] base remove"
-  echo "[w] wireguard install"
-  echo "[wr] wireguard remove"
-  echo "[ws] wireguard run bash"
+  echo "[w] wireguard"
+  echo "[p] running containers"
 
-  read wireguard
+  read main
 
-  case "$wireguard" in
+  case "$main" in
 
     "B" | "b" )
     echo "base install"
@@ -60,22 +73,80 @@ do
     ;;
 
     "W" | "w" )
-    echo "wireguard install"
-    # Создаём образ wirwguard
-    image_creation wireguard
+    while [ "$main" != "q" ] | [ "$main" != "Q" ]
+    do
+    clear
+    echo "[i] wireguard install docker image"
+    echo "[r] wireguard remove"
+    echo "[b] wireguard run bash"
+    echo "[s] wireguard start"
+    echo "[t] wireguard stop"
+    echo "[c] wireguard commit"
+    echo "[q] return to main menu"
+
+    read wireguard
+
+    case "$wireguard" in
+      
+      "I" | "i" )
+      echo "wireguard install docker image"
+      # Создаём образ wirwguard
+      image_creation wireguard
+      ;;
+
+      "R" | "r" )
+      echo "wireguard remove"
+      # Удаляем образ wireguard
+      delete_image wireguard
+      ;;
+
+      "B" | "b" )
+      echo "wireguard run bash"
+      # Запускаем контейнер wireguard и подключаемся к коммандному интерпретатору
+      #docker stop wireguard
+      #docker run -it --rm --network=host --name=wireguard wireguard
+      docker exec -it wireguard bash
+      ;;
+
+      "S" | "s" )
+      echo "wireguard start"
+      # Запускаем контейнер wireguard и подключаемся к коммандному интерпретатору
+      #docker stop wireguard
+      docker run -d -it --rm --network=host --name=wireguard wireguard
+      #docker run -d -it --rm --network=host --name=wireguard wireguard:0.0.1
+      ;;
+
+      "T" | "t" )
+      echo "wireguard stop"
+      # Запускаем контейнер wireguard и подключаемся к коммандному интерпретатору
+      docker stop wireguard
+      ;;
+
+      "C" | "c" )
+      echo "wireguard commit"
+      # Сохраняем содержимое контейнера
+      docker commit -p wireguard wireguard
+      ;;
+
+      "Q" | "q" )
+      echo "return to main menu"
+      sleep 1
+      break
+      ;;
+      
+      * )
+      echo "Нажмите правильную кнопку"
+      sleep 1 
+      ;;
+    esac
+    done
     ;;
 
-    "WR" | "wr" )
-    echo "wireguard remove"
-    # Удаляем образ wireguard
-    delete_image wireguard
-    ;;
-
-    "WS" | "ws" )
-    echo "wireguard run bash"
-    # Запускаем контейнер wireguard и подключаемся к коммандному интерпретатору
-    #docker stop wireguard
-    docker run -it --rm --network=host --name=wireguard wireguard
+    "P" | "p" )
+    #echo "running containers"
+    # Запущенные контейнеры
+    docker ps
+    sleep 3
     ;;
 
     "Q" | "q" )
