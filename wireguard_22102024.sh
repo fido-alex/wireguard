@@ -49,8 +49,8 @@ function image_creation {
 }
 
 while [ "$main" != "q" ] | [ "$main" != "Q" ]
+#clear
 do
-  clear
   echo "[q] quit"
   echo "[b] base install"
   echo "[br] base remove"
@@ -73,16 +73,12 @@ do
     ;;
 
     "W" | "w" )
-    while [ "$main" != "q" ] | [ "$main" != "Q" ]
-    do
     clear
     echo "[i] wireguard install docker image"
-    echo "[w] wireguard install"
-    echo "[r] wireguard remove docker image"
+    echo "[r] wireguard remove"
     echo "[b] wireguard run bash"
-    echo "[s] wireguard start docker image"
-    echo "[t] wireguard stop docker image"
-    echo "[c] wireguard commit docker image"
+    echo "[s] wireguard start"
+    echo "[t] wireguard stop"
     echo "[q] return to main menu"
 
     read wireguard
@@ -93,13 +89,6 @@ do
       echo "wireguard install docker image"
       # Создаём образ wirwguard
       image_creation wireguard
-      ;;
-
-      "W" | "w" )
-      echo "wireguard install"
-      # Настраиваем wireguard
-      docker exec -it wireguard 'bash -c ls'
-      sleep 3
       ;;
 
       "R" | "r" )
@@ -121,7 +110,7 @@ do
       # Запускаем контейнер wireguard и подключаемся к коммандному интерпретатору
       #docker stop wireguard
       docker run -d -it --rm --network=host --name=wireguard wireguard
-      #docker run -d -it --rm --network=host --name=wireguard wireguard:0.0.1
+      #docker run -d -it --network=host --name=wireguard wireguard
       ;;
 
       "T" | "t" )
@@ -130,30 +119,22 @@ do
       docker stop wireguard
       ;;
 
-      "C" | "c" )
-      echo "wireguard commit"
-      # Сохраняем содержимое контейнера
-      docker commit -p wireguard wireguard
-      ;;
-
       "Q" | "q" )
       echo "return to main menu"
-      break
+      sleep 1
       ;;
-      
+
       * )
       echo "Нажмите правильную кнопку"
       sleep 1 
       ;;
     esac
-    done
     ;;
 
     "P" | "p" )
-    #echo "running containers"
+    echo "running containers"
     # Запущенные контейнеры
     docker ps
-    sleep 3
     ;;
 
     "Q" | "q" )
