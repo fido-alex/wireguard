@@ -32,20 +32,17 @@ function image_creation {
   echo "RUN apt install -y wireguard" >> Dockerfile
   echo "RUN cd /etc/wireguard/" >> Dockerfile
   echo "RUN wg genkey | tee /etc/wireguard/privatekey | wg pubkey | tee /etc/wireguard/publickey" >> Dockerfile
-  echo 'RUN privatekey=`cat /etc/wireguard/privatekey`' >> Dockerfile
-  echo 'RUN echo '[Interface]' > wg0.conf' >> Dockerfile
-  echo 'RUN echo "PrivateKey = $privatekey" >> wg0.conf' >> Dockerfile
-  echo 'RUN echo "Address = 10.0.10.1/24" >> wg0.conf' >> Dockerfile
-  echo 'RUN echo "ListenPort = 51831" >> wg0.conf' >> Dockerfile
-  echo 'RUN echo "PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eno1 -j MASQUERADE" >> wg0.conf' >> Dockerfile
-  echo 'RUN echo "PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eno1 -j MASQUERADE" >> wg0.conf' >> Dockerfile
+  echo 'RUN echo '[Interface]' > /etc/wireguard/wg1.conf' >> Dockerfile
+  echo 'RUN echo "PrivateKey = `cat /etc/wireguard/privatekey`" >> /etc/wireguard/wg1.conf' >> Dockerfile
+  echo 'RUN echo "Address = 10.0.10.1/24" >> /etc/wireguard/wg1.conf' >> Dockerfile
+  echo 'RUN echo "ListenPort = 51831" >> /etc/wireguard/wg1.conf' >> Dockerfile
+  echo 'RUN echo "PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eno1 -j MASQUERADE" >> /etc/wireguard/wg1.conf' >> Dockerfile
+  echo 'RUN echo "PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eno1 -j MASQUERADE" >> /etc/wireguard/wg1.conf' >> Dockerfile
   echo 'RUN echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf' >> Dockerfile
-  echo 'RUN systemctl enable wg-quick@wg0.service' >> Dockerfile
+  echo 'RUN systemctl enable wg-quick@wg1.service' >> Dockerfile
+  #echo 'CMD /usr/bin/wg-quick up wg1' >> Dockerfile
   echo 'CMD ["bash"]' >> Dockerfile
   docker build -t $1 .
-  #docker images
-  #docker run -it --rm --network=host --name="$1" "$1"
-  #sleep 7
 }
 
 while [ "$main" != "q" ] | [ "$main" != "Q" ]
@@ -77,7 +74,6 @@ do
     do
     clear
     echo "[i] wireguard install docker image"
-    echo "[w] wireguard install"
     echo "[r] wireguard remove docker image"
     echo "[b] wireguard run bash"
     echo "[s] wireguard start docker image"
@@ -95,33 +91,23 @@ do
       image_creation wireguard
       ;;
 
-      "W" | "w" )
-      echo "wireguard install"
-      # Настраиваем wireguard
-      docker exec -it wireguard 'bash -c ls'
-      sleep 3
-      ;;
-
       "R" | "r" )
       echo "wireguard remove"
       # Удаляем образ wireguard
       delete_image wireguard
+      sleep 3
       ;;
 
       "B" | "b" )
       echo "wireguard run bash"
       # Запускаем контейнер wireguard и подключаемся к коммандному интерпретатору
-      #docker stop wireguard
-      #docker run -it --rm --network=host --name=wireguard wireguard
       docker exec -it wireguard bash
       ;;
 
       "S" | "s" )
       echo "wireguard start"
       # Запускаем контейнер wireguard и подключаемся к коммандному интерпретатору
-      #docker stop wireguard
       docker run -d -it --rm --network=host --name=wireguard wireguard
-      #docker run -d -it --rm --network=host --name=wireguard wireguard:0.0.1
       ;;
 
       "T" | "t" )
